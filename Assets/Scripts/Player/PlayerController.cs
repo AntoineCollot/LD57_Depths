@@ -7,6 +7,7 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField, Range(1, 10)] float maxSpeed = 4;
+    [SerializeField, Range(1, 10)] float maxSpeedHidden = 7;
     [SerializeField, Range(1, 80)] float maxAcceleration = 20;
     [SerializeField, Range(1, 80)] float maxDeceleration = 20;
     [SerializeField, Range(1, 80)] float maxTurnSpeed = 20;
@@ -32,27 +33,43 @@ public class PlayerController : MonoBehaviour
     Transform camT;
     InputMap inputs;
     Rigidbody body;
+    HideController hideController;
 
     public float NormalizedMoveSpeed
     {
         get
         {
             Vector2 velocity = new Vector2(body.velocity.x, body.velocity.z);
-            return velocity.magnitude / maxSpeed;
+            return velocity.magnitude / EffectiveMaxSpeed;
         }
     }
+
+    public float EffectiveMaxSpeed
+    {
+        get
+        {
+            if (hideController.isHidden)
+                return maxSpeedHidden;
+
+            return maxSpeed;
+        }
+    }
+
     public Vector3 MoveDirection => new Vector3(desiredVelocity.x, 0, desiredVelocity.y).normalized;
 
     void Awake()
     {
         inputs = new InputMap();
+        body = GetComponent<Rigidbody>();
+        hideController = GetComponent<HideController>();
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        body = GetComponent<Rigidbody>();
         camT = Camera.main.transform;
+
+        refRotation = Quaternion.identity;
     }
 
     private void OnEnable()
@@ -79,7 +96,30 @@ public class PlayerController : MonoBehaviour
         }
 
         effectiveDirectionInput = AlignWithCamera(effectiveDirectionInput);
-        desiredVelocity = effectiveDirectionInput * maxSpeed;
+        desiredVelocity = effectiveDirectionInput * EffectiveMaxSpeed;
+
+        if (!CameraUtils.IsInCameraBound(Camera.main, transform.position, out Direction outDirection))
+        {
+            //opposite vector
+            switch (outDirection)
+            {
+                case Direction.Up:
+                default:
+                    desiredVelocity = Vector2.down;
+                    break;
+                case Direction.Right:
+                    desiredVelocity = Vector2.left;
+                    break;
+                case Direction.Down:
+                    desiredVelocity = Vector2.up;
+                    break;
+                case Direction.Left:
+                    desiredVelocity = Vector2.right;
+                    break;
+            }
+
+            desiredVelocity *= EffectiveMaxSpeed;
+        }
     }
 
     private void FixedUpdate()
@@ -150,8 +190,15 @@ public class PlayerController : MonoBehaviour
 
     void UpdateLookDirection(Vector2 inputDirection)
     {
+        if (PlayerState.Instance.freezeInputsState.IsOn || !GameManager.Instance.GameIsPlaying)
+        {
+            body.rotation = currentLookRotation.normalized;
+            return;
+        }
+
         if (inputDirection.magnitude > 0.01f)
             targetRotation = Quaternion.LookRotation(new Vector3(inputDirection.x, 0, inputDirection.y));
+
         currentLookRotation = QuaternionUtils.SmoothDamp(currentLookRotation, targetRotation, ref refRotation, lookSmooth).normalized;
         body.rotation = currentLookRotation;
     }
@@ -165,5 +212,4 @@ public class PlayerController : MonoBehaviour
         cameraRight.Normalize();
         return vector.y * cameraForward + vector.x * cameraRight;
     }
-
 }

@@ -7,6 +7,8 @@ public class SceneLoader : MonoBehaviour
 {
     bool isLoading = false;
 
+    const string LEVEL_SCENE_NAME = "Level";
+
     public void LoadNext()
     {
         if (isLoading)
@@ -32,5 +34,11 @@ public class SceneLoader : MonoBehaviour
 
         isLoading = true;
         SceneManager.LoadScene(1);
+    }
+
+    public void LoadLevel(int id)
+    {
+        isLoading = true;
+        SceneManager.LoadScene(LEVEL_SCENE_NAME + id.ToString());
     }
 }

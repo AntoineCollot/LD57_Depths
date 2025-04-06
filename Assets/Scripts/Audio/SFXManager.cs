@@ -7,22 +7,15 @@ using UnityEditor;
 
 public enum GlobalSFX
 {
-    Jump,
-    Land,
-    EnemyDeath,
-    CatKill,
-    EagleKill,
-    CatAttack,
-    EagleAttack,
-    Hit,
-    Slide,
-    Kick,
-    Dive,
-    DiveLanding,
-    PlayerDeath,
+    Hide,
+    EatFail,
+    EatSuccess,
+    DeepFishDie,
+    DeepFishWarning,
     ButtonClick,
-    ProjectileExplosion,
-    LevelCleared,
+    GetStar,
+    SeaStarAfraid,
+    SeaStarDie,
 }
 public class SFXManager : MonoBehaviour
 {
@@ -39,11 +32,6 @@ public class SFXManager : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
-        if(Instance != null)
-        {
-            Destroy(gameObject);
-            return;
-        }
         Instance = this;
         audioSource = GetComponent<AudioSource>();
     }

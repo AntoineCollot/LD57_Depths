@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class PlayerLantern : MonoBehaviour
 {
-    [SerializeField, Range(0, 4)] float warningZoneRadius;
-    [SerializeField, Range(0, 4)] float flightZoneRadius;
+    [SerializeField, Range(0, 6)] float warningZoneRadius;
+    [SerializeField, Range(0, 6)] float flightZoneRadius;
 
     public enum ProximityZone { TooFar, Warning, Flight }
     HideController hideController;

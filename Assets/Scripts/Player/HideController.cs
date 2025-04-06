@@ -21,10 +21,10 @@ public class HideController : MonoBehaviour
     float defaultLanternRange;
 
     [Header("Buffer")]
-    const float MIN_HIDE_TIME = 0.7f;
-    const float EAT_COOLDOWN = 1.2f;
-    float lastEatTime;
-    float lastHideTime;
+    const float MIN_HIDE_TIME = 0.8f;
+    const float EAT_COOLDOWN = 1f;
+    float lastEatTime = -2;
+    float lastHideTime = -2;
     bool? bufferedHideCommand;
 
     public bool isHidden { get; private set; }
@@ -62,6 +62,9 @@ public class HideController : MonoBehaviour
 
     private void Update()
     {
+        if(!GameManager.Instance.GameIsPlaying || PlayerState.Instance.freezeInputsState.IsOn)
+            return;
+
         if (bufferedHideCommand.HasValue)
         {
             //Cancel buffer if already in this state
@@ -110,12 +113,15 @@ public class HideController : MonoBehaviour
         {
             lastHideTime = Time.time;
             StartCoroutine(HideTransition(0, 1, 0.2f,0.2f));
+            MusicManager.Instance.SetMode(MusicManager.Mode.Hidden);
+            SFXManager.PlaySound(GlobalSFX.Hide);
         }
         else
         {
             lastEatTime = Time.time;
             StartCoroutine(HideTransition(1, 0, 0.2f));
             Camera.main.cullingMask = defaultMask;
+            MusicManager.Instance.SetMode(MusicManager.Mode.Default);
         }
     }
 

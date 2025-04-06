@@ -13,6 +13,8 @@ public class FishController : MonoBehaviour
 {
     public enum State { Patrolling, Afraid, CalmingDown }
     State currentState;
+    PlayerLantern.ProximityZone lastProximity;
+    PlayerLantern.ProximityZone proximity;
 
     [Header("Movement")]
     [SerializeField] float movementSmooth = 0.1f;
@@ -28,6 +30,7 @@ public class FishController : MonoBehaviour
     [SerializeField] SplineContainer platrolSplineContainer;
     SplinePath splinePath;
     [SerializeField] float calmSpeed;
+    [SerializeField] bool inversePatrolDirection;
     Vector3 originalPosition;
     float patrolProgress = 0f;
     float patrolLength;
@@ -37,6 +40,12 @@ public class FishController : MonoBehaviour
     [SerializeField, Range(0, 4)] float obstacleDetectionDistance;
     [SerializeField] int obstacleDetectionRayCount = 12;
     [SerializeField] LayerMask obstacleDetectionLayers;
+
+    [Header("FX")]
+    [SerializeField] GameObject exclamation;
+    [SerializeField] GameObject deathFXPrefab;
+    [SerializeField] GlobalSFX afraidSound;
+    [SerializeField] GlobalSFX dieSound;
 
     bool isDead;
     Animator anim;
@@ -56,12 +65,22 @@ public class FishController : MonoBehaviour
         }
 
         anim = GetComponentInChildren<Animator>();
+        exclamation.SetActive(false);
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(isDead) return;
+        exclamation.SetActive(false);
+        if (isDead) return;
+        if (!GameManager.Instance.GameIsPlaying)
+        {
+            anim.SetFloat("SwimSpeed", 1);
+            return;
+        }
+
+        proximity = PlayerLantern.Instance.GetProximityZone(transform.position);
+
         switch (currentState)
         {
             case State.Patrolling:
@@ -79,12 +98,18 @@ public class FishController : MonoBehaviour
                 break;
         }
 
+
         //Afraid anim is only when the fish isn't moving
-        bool isAffraidAnim = PlayerLantern.Instance.GetProximityZone(transform.position) == PlayerLantern.ProximityZone.Warning && currentState != State.Afraid;
+        bool isAffraidAnim = proximity == PlayerLantern.ProximityZone.Warning && currentState != State.Afraid;
         anim.SetBool("IsAffraid", isAffraidAnim);
 
         currentMovement = Vector3.SmoothDamp(currentMovement, targetMovement, ref refMovement, movementSmooth);
         body.velocity = currentMovement;
+    }
+
+    private void LateUpdate()
+    {
+        lastProximity = proximity;
     }
 
     void InitPatrolPath()
@@ -108,7 +133,6 @@ public class FishController : MonoBehaviour
 
     void UpdatePatrollingState()
     {
-        PlayerLantern.ProximityZone proximity = PlayerLantern.Instance.GetProximityZone(transform.position);
         switch (proximity)
         {
             case PlayerLantern.ProximityZone.TooFar:
@@ -128,7 +152,6 @@ public class FishController : MonoBehaviour
 
     void UpdateAfraidState()
     {
-        PlayerLantern.ProximityZone proximity = PlayerLantern.Instance.GetProximityZone(transform.position);
         switch (proximity)
         {
             case PlayerLantern.ProximityZone.TooFar:
@@ -152,7 +175,6 @@ public class FishController : MonoBehaviour
 
     void UpdateCalmingDownState()
     {
-        PlayerLantern.ProximityZone proximity = PlayerLantern.Instance.GetProximityZone(transform.position);
         switch (proximity)
         {
             case PlayerLantern.ProximityZone.TooFar:
@@ -175,6 +197,10 @@ public class FishController : MonoBehaviour
         //Stationary patrol
         if (!MoveDuringPatrol)
         {
+            //Return to patrol mode
+            if (Vector3.Distance(transform.position, originalPosition) < BACK_TO_PATROL_DIST)
+                currentState = State.Patrolling;
+
             targetMovement = originalPosition - transform.position;
             targetMovement.Flatten();
             if (targetMovement.magnitude > 0.01f)
@@ -192,21 +218,30 @@ public class FishController : MonoBehaviour
         //Return to patrol mode
         if (Vector3.Distance(transform.position, targetPos) < BACK_TO_PATROL_DIST)
             currentState = State.Patrolling;
+
     }
 
     void Patrol()
     {
         //Stationary patrol
-        if (!MoveDuringPatrol)
+        if (!MoveDuringPatrol || proximity == PlayerLantern.ProximityZone.Warning)
         {
             targetMovement = Vector3.zero;
             return;
         }
 
         //Increment progress
-        patrolProgress += calmSpeed / patrolLength * Time.deltaTime;
-        patrolProgress %= 1;
-        Debug.Log(patrolProgress);
+        if (inversePatrolDirection)
+        {
+            patrolProgress -= calmSpeed / patrolLength * Time.deltaTime;
+            if (patrolProgress < 0)
+                patrolProgress += 1;
+        }
+        else
+        {
+            patrolProgress += calmSpeed / patrolLength * Time.deltaTime;
+            patrolProgress %= 1;
+        }
 
         //Evaluate pos
         Vector3 targetPos = splinePath.EvaluatePosition(patrolProgress);
@@ -217,7 +252,16 @@ public class FishController : MonoBehaviour
 
     void DisplayWarningForFrame()
     {
+        if (lastProximity == PlayerLantern.ProximityZone.TooFar)
+        {
+            Vector3 lookPos = PlayerLantern.Instance.LanternPosition - transform.position;
+            lookPos.Flatten();
+            lookPos.Normalize();
+            body.rotation = Quaternion.LookRotation(lookPos);
+            SFXManager.PlaySound(afraidSound);
+        }
 
+        exclamation.SetActive(true);
     }
 
     void RunAway()
@@ -225,7 +269,6 @@ public class FishController : MonoBehaviour
         Vector3 fromLantern = transform.position - PlayerLantern.Instance.LanternPosition;
         fromLantern.Flatten();
         fromLantern.Normalize();
-        Debug.Log(fromLantern);
 
         targetMovement = fromLantern;
         if (TryGetObstacleAvoidanceVector(out Vector3 avoidanceVector))
@@ -299,10 +342,18 @@ public class FishController : MonoBehaviour
 
     public void Die()
     {
+        GameObject fx = Instantiate(deathFXPrefab, null);
+        Destroy(fx, 1);
+        fx.transform.position = transform.position;
+
         GetComponent<Collider>().enabled = false;
         anim.SetTrigger("Die");
-        Destroy(gameObject,0.2f);
+        Destroy(gameObject, 0.2f);
         isDead = true;
+
+        GameManager.Instance.OnFishDie(this);
+
+        SFXManager.PlaySound(dieSound);
     }
 
 #if UNITY_EDITOR
