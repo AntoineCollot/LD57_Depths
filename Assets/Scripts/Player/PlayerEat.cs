@@ -35,7 +35,10 @@ public class PlayerEat : MonoBehaviour
         Collider[] hitColliders = Physics.OverlapSphere(EatPosition, eatRadius, eatLayers);
         foreach (Collider col in hitColliders)
         {
-            Destroy(col.gameObject);
+            if(col.TryGetComponent(out FishController fish))
+            {
+                fish.Die();
+            }
         }
 
         particles.Play();

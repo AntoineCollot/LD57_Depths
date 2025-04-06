@@ -38,6 +38,9 @@ public class FishController : MonoBehaviour
     [SerializeField] int obstacleDetectionRayCount = 12;
     [SerializeField] LayerMask obstacleDetectionLayers;
 
+    bool isDead;
+    Animator anim;
+
     public bool MoveDuringPatrol => platrolSplineContainer != null;
     public Vector3 PatrolPosition => originalPosition;
 
@@ -51,24 +54,34 @@ public class FishController : MonoBehaviour
         {
             InitPatrolPath();
         }
+
+        anim = GetComponentInChildren<Animator>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        if(isDead) return;
         switch (currentState)
         {
             case State.Patrolling:
             default:
                 UpdatePatrollingState();
+                anim.SetFloat("SwimSpeed", 1);
                 break;
             case State.Afraid:
                 UpdateAfraidState();
+                anim.SetFloat("SwimSpeed", 2);
                 break;
             case State.CalmingDown:
                 UpdateCalmingDownState();
+                anim.SetFloat("SwimSpeed", 1);
                 break;
         }
+
+        //Afraid anim is only when the fish isn't moving
+        bool isAffraidAnim = PlayerLantern.Instance.GetProximityZone(transform.position) == PlayerLantern.ProximityZone.Warning && currentState != State.Afraid;
+        anim.SetBool("IsAffraid", isAffraidAnim);
 
         currentMovement = Vector3.SmoothDamp(currentMovement, targetMovement, ref refMovement, movementSmooth);
         body.velocity = currentMovement;
@@ -284,6 +297,13 @@ public class FishController : MonoBehaviour
         return 1 / (value * value);
     }
 
+    public void Die()
+    {
+        GetComponent<Collider>().enabled = false;
+        anim.SetTrigger("Die");
+        Destroy(gameObject,0.2f);
+        isDead = true;
+    }
 
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()

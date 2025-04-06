@@ -22,7 +22,7 @@ public class HideController : MonoBehaviour
 
     [Header("Buffer")]
     const float MIN_HIDE_TIME = 0.7f;
-    const float EAT_COOLDOWN = 1.3f;
+    const float EAT_COOLDOWN = 1.2f;
     float lastEatTime;
     float lastHideTime;
     bool? bufferedHideCommand;
