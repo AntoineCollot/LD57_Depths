@@ -150,7 +150,7 @@ public class PlayerController : MonoBehaviour
 
     void UpdateLookDirection(Vector2 inputDirection)
     {
-        if (inputDirection.magnitude > 0.1f)
+        if (inputDirection.magnitude > 0.01f)
             targetRotation = Quaternion.LookRotation(new Vector3(inputDirection.x, 0, inputDirection.y));
         currentLookRotation = QuaternionUtils.SmoothDamp(currentLookRotation, targetRotation, ref refRotation, lookSmooth).normalized;
         body.rotation = currentLookRotation;

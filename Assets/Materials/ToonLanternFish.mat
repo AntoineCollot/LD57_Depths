@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: ToonLanternFish
-  m_Shader: {fileID: -6465566751694194690, guid: a9491756794eab941a1a67d7d17847ab,
+  m_Shader: {fileID: -6465566751694194690, guid: 4bd2c7d4b576ecc47ba0fa274d53a0d0,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -63,6 +63,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
         m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GlowMap:
+        m_Texture: {fileID: 2800000, guid: 4c929d62441e0bc4aa1dda1fa77632c4, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
@@ -128,6 +132,10 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0.697
     - _GlossyReflections: 0
+    - _GlowAmplitude: 1
+    - _GlowFreq: 7
+    - _GlowIntensity: 13
+    - _GlowVarianceMult: 1.5
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005

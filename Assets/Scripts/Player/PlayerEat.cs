@@ -4,11 +4,15 @@ using UnityEngine;
 
 public class PlayerEat : MonoBehaviour
 {
+    [Header("Settings")]
     [SerializeField] Transform eatOrigin;
     [SerializeField] float eatRadius;
     float lastEatTime;
     Vector3 lastEatPosition;
     [SerializeField] LayerMask eatLayers;
+
+    [Header("FX")]
+    [SerializeField] ParticleSystem particles;
 
     Vector3 EatPosition => eatOrigin.position;
     HideController hideController;
@@ -33,6 +37,8 @@ public class PlayerEat : MonoBehaviour
         {
             Destroy(col.gameObject);
         }
+
+        particles.Play();
     }
 
 #if UNITY_EDITOR

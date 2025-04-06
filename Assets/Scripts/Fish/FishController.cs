@@ -1,6 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Splines;
+using Unity.Mathematics;
+
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -12,19 +16,29 @@ public class FishController : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField] float movementSmooth = 0.1f;
-    [SerializeField] float patrollingSpeed;
     [SerializeField] float flightSpeed;
     Vector3 refMovement;
     Vector3 currentMovement;
     Vector3 targetMovement;
     Rigidbody body;
+    [SerializeField] float timeBeforeCalming = 1;
+    float lastFlightTime;
+
+    [Header("Patrol")]
+    [SerializeField] SplineContainer platrolSplineContainer;
+    SplinePath splinePath;
+    [SerializeField] float calmSpeed;
+    Vector3 originalPosition;
+    float patrolProgress = 0f;
+    float patrolLength;
+    const float BACK_TO_PATROL_DIST = 1f;
 
     [Header("Obstacle Detection")]
     [SerializeField, Range(0, 4)] float obstacleDetectionDistance;
     [SerializeField] int obstacleDetectionRayCount = 12;
     [SerializeField] LayerMask obstacleDetectionLayers;
 
-    Vector3 originalPosition;
+    public bool MoveDuringPatrol => platrolSplineContainer != null;
     public Vector3 PatrolPosition => originalPosition;
 
     // Start is called before the first frame update
@@ -32,6 +46,11 @@ public class FishController : MonoBehaviour
     {
         originalPosition = transform.position;
         body = GetComponent<Rigidbody>();
+
+        if (MoveDuringPatrol)
+        {
+            InitPatrolPath();
+        }
     }
 
     // Update is called once per frame
@@ -53,6 +72,25 @@ public class FishController : MonoBehaviour
 
         currentMovement = Vector3.SmoothDamp(currentMovement, targetMovement, ref refMovement, movementSmooth);
         body.velocity = currentMovement;
+    }
+
+    void InitPatrolPath()
+    {
+        var matrix = platrolSplineContainer.transform.localToWorldMatrix;
+        splinePath = new SplinePath(new[]
+        {
+             new SplineSlice<Spline>(platrolSplineContainer.Splines[0], new SplineRange(0, platrolSplineContainer.Splines[0].Count+1), matrix),
+            });
+        patrolLength = splinePath.GetLength();
+
+        //Find closest position on spline to start at
+        GetClosestProgressOnCurve(transform.position, out patrolProgress, out Vector3 pos);
+    }
+
+    void GetClosestProgressOnCurve(Vector3 fromPos, out float progress, out Vector3 nearestPos)
+    {
+        SplineUtility.GetNearestPoint(splinePath, fromPos, out float3 nearest, out progress);
+        nearestPos = nearest;
     }
 
     void UpdatePatrollingState()
@@ -82,11 +120,18 @@ public class FishController : MonoBehaviour
         {
             case PlayerLantern.ProximityZone.TooFar:
             default:
-                currentState = State.CalmingDown;
-                UpdateCalmingDownState();
+                //Check if enough time has passed since last afraid or warnign
+                if (Time.time > lastFlightTime + timeBeforeCalming)
+                {
+                    currentState = State.CalmingDown;
+                    UpdateCalmingDownState();
+                }
+                else
+                    RunAway();
                 break;
             case PlayerLantern.ProximityZone.Warning:
             case PlayerLantern.ProximityZone.Flight:
+                lastFlightTime = Time.time;
                 RunAway();
                 break;
         }
@@ -114,13 +159,47 @@ public class FishController : MonoBehaviour
 
     void ReturnToPatrolPosition()
     {
-        targetMovement = Vector3.zero;
+        //Stationary patrol
+        if (!MoveDuringPatrol)
+        {
+            targetMovement = originalPosition - transform.position;
+            targetMovement.Flatten();
+            if (targetMovement.magnitude > 0.01f)
+                targetMovement.Normalize();
+            targetMovement *= calmSpeed;
+            return;
+        }
 
+        GetClosestProgressOnCurve(transform.position, out patrolProgress, out Vector3 targetPos);
+        targetMovement = targetPos - transform.position;
+        targetMovement.Flatten();
+        targetMovement.Normalize();
+        targetMovement *= calmSpeed;
+
+        //Return to patrol mode
+        if (Vector3.Distance(transform.position, targetPos) < BACK_TO_PATROL_DIST)
+            currentState = State.Patrolling;
     }
 
     void Patrol()
     {
-        targetMovement = Vector3.zero;
+        //Stationary patrol
+        if (!MoveDuringPatrol)
+        {
+            targetMovement = Vector3.zero;
+            return;
+        }
+
+        //Increment progress
+        patrolProgress += calmSpeed / patrolLength * Time.deltaTime;
+        patrolProgress %= 1;
+        Debug.Log(patrolProgress);
+
+        //Evaluate pos
+        Vector3 targetPos = splinePath.EvaluatePosition(patrolProgress);
+
+        targetMovement = targetPos - transform.position;
+        targetMovement.Flatten();
     }
 
     void DisplayWarningForFrame()
@@ -130,7 +209,7 @@ public class FishController : MonoBehaviour
 
     void RunAway()
     {
-        Vector3 fromLantern = transform.position-PlayerLantern.Instance.LanternPosition;
+        Vector3 fromLantern = transform.position - PlayerLantern.Instance.LanternPosition;
         fromLantern.Flatten();
         fromLantern.Normalize();
         Debug.Log(fromLantern);
@@ -188,7 +267,7 @@ public class FishController : MonoBehaviour
         avoidanceVector.Normalize();
 
         //Increase size of vector when getting close, Boid things
-        avoidanceVector *= Inv(minDistToObstacle,2);
+        avoidanceVector *= Inv(minDistToObstacle, 2);
 
         return true;
     }
