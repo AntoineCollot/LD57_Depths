@@ -20,6 +20,9 @@ public class HideController : MonoBehaviour
     float defaultLanternIntensity;
     float defaultLanternRange;
 
+    [Header("FX")]
+    [SerializeField] ParticleSystem hideFX;
+
     [Header("Buffer")]
     const float MIN_HIDE_TIME = 0.8f;
     const float EAT_COOLDOWN = 1f;
@@ -115,6 +118,7 @@ public class HideController : MonoBehaviour
             StartCoroutine(HideTransition(0, 1, 0.2f,0.2f));
             MusicManager.Instance.SetMode(MusicManager.Mode.Hidden);
             SFXManager.PlaySound(GlobalSFX.Hide);
+            hideFX.Play();
         }
         else
         {

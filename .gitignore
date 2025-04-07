@@ -35,6 +35,7 @@ ehthumbs.db
 sysinfo.txt 
 *.stackdump
 /Logs/
+Recordings/
 
 #Builds
 #===============

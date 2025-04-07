@@ -44,6 +44,15 @@ public partial class @InputMap: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""AutoWin"",
+                    ""type"": ""Button"",
+                    ""id"": ""607792a0-8059-460a-ac6e-1fa2f14cbc06"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -233,6 +242,39 @@ public partial class @InputMap: IInputActionCollection2, IDisposable
                     ""action"": ""Hide"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""One Modifier"",
+                    ""id"": ""d5e554ce-ab56-41a1-b469-0f7f999675f1"",
+                    ""path"": ""OneModifier"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AutoWin"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""modifier"",
+                    ""id"": ""12d25e7e-3b2e-4578-aafa-17ea1f4d0cba"",
+                    ""path"": ""<Keyboard>/g"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AutoWin"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""binding"",
+                    ""id"": ""94c14372-2d84-4b30-ac30-96801b65c3d1"",
+                    ""path"": ""<Keyboard>/shift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AutoWin"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
                 }
             ]
         }
@@ -243,6 +285,7 @@ public partial class @InputMap: IInputActionCollection2, IDisposable
         m_Main = asset.FindActionMap("Main", throwIfNotFound: true);
         m_Main_Movement = m_Main.FindAction("Movement", throwIfNotFound: true);
         m_Main_Hide = m_Main.FindAction("Hide", throwIfNotFound: true);
+        m_Main_AutoWin = m_Main.FindAction("AutoWin", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -306,12 +349,14 @@ public partial class @InputMap: IInputActionCollection2, IDisposable
     private List<IMainActions> m_MainActionsCallbackInterfaces = new List<IMainActions>();
     private readonly InputAction m_Main_Movement;
     private readonly InputAction m_Main_Hide;
+    private readonly InputAction m_Main_AutoWin;
     public struct MainActions
     {
         private @InputMap m_Wrapper;
         public MainActions(@InputMap wrapper) { m_Wrapper = wrapper; }
         public InputAction @Movement => m_Wrapper.m_Main_Movement;
         public InputAction @Hide => m_Wrapper.m_Main_Hide;
+        public InputAction @AutoWin => m_Wrapper.m_Main_AutoWin;
         public InputActionMap Get() { return m_Wrapper.m_Main; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -327,6 +372,9 @@ public partial class @InputMap: IInputActionCollection2, IDisposable
             @Hide.started += instance.OnHide;
             @Hide.performed += instance.OnHide;
             @Hide.canceled += instance.OnHide;
+            @AutoWin.started += instance.OnAutoWin;
+            @AutoWin.performed += instance.OnAutoWin;
+            @AutoWin.canceled += instance.OnAutoWin;
         }
 
         private void UnregisterCallbacks(IMainActions instance)
@@ -337,6 +385,9 @@ public partial class @InputMap: IInputActionCollection2, IDisposable
             @Hide.started -= instance.OnHide;
             @Hide.performed -= instance.OnHide;
             @Hide.canceled -= instance.OnHide;
+            @AutoWin.started -= instance.OnAutoWin;
+            @AutoWin.performed -= instance.OnAutoWin;
+            @AutoWin.canceled -= instance.OnAutoWin;
         }
 
         public void RemoveCallbacks(IMainActions instance)
@@ -358,5 +409,6 @@ public partial class @InputMap: IInputActionCollection2, IDisposable
     {
         void OnMovement(InputAction.CallbackContext context);
         void OnHide(InputAction.CallbackContext context);
+        void OnAutoWin(InputAction.CallbackContext context);
     }
 }

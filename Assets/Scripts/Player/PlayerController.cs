@@ -75,12 +75,23 @@ public class PlayerController : MonoBehaviour
     private void OnEnable()
     {
         inputs.Enable();
+
+        inputs.Main.AutoWin.performed += AutoWinPerformed;
+    }
+
+    private void AutoWinPerformed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        if (!PlayerState.Instance.freezeInputsState.IsOn && GameManager.Instance.GameIsPlaying)
+        {
+            GameManager.Instance.ClearLevel(true);
+        }
     }
 
     private void OnDisable()
     {
         if (inputs != null)
         {
+            inputs.Main.AutoWin.performed -= AutoWinPerformed;
             inputs.Disable();
         }
     }

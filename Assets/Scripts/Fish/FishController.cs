@@ -35,6 +35,7 @@ public class FishController : MonoBehaviour
     float patrolProgress = 0f;
     float patrolLength;
     const float BACK_TO_PATROL_DIST = 1f;
+    [SerializeField] bool freezeWhenWarning = true;
 
     [Header("Obstacle Detection")]
     [SerializeField, Range(0, 4)] float obstacleDetectionDistance;
@@ -224,7 +225,7 @@ public class FishController : MonoBehaviour
     void Patrol()
     {
         //Stationary patrol
-        if (!MoveDuringPatrol || proximity == PlayerLantern.ProximityZone.Warning)
+        if (!MoveDuringPatrol || (proximity == PlayerLantern.ProximityZone.Warning && freezeWhenWarning))
         {
             targetMovement = Vector3.zero;
             return;

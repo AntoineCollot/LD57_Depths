@@ -75,16 +75,26 @@ public class GameManager : MonoBehaviour
         onGameOver.Invoke();
     }
 
-    public void ClearLevel()
+    [ContextMenu("Clear Player Pref")]
+    public void ClearPlayerPref()
+    {
+        PlayerPrefs.DeleteAll();
+    }
+
+    public void ClearLevel(bool cancelStars = false)
     {
         if (gameIsOver)
             return;
 
-        levelEndTime = Time.time;
+        if (cancelStars)
+            levelEndTime = Time.time + 100;
+        else
+            levelEndTime = Time.time;
         Debug.Log($"Level Cleared in {LevelTime}!");
         gameIsOver = true;
         onGameWin.Invoke();
         MusicManager.Instance.SetMode(MusicManager.Mode.MainMenu);
+        SFXManager.PlaySound(GlobalSFX.Win);
 
         UpdateHighscore();
     }

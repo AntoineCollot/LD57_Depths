@@ -16,6 +16,7 @@ public enum GlobalSFX
     GetStar,
     SeaStarAfraid,
     SeaStarDie,
+    Win,
 }
 public class SFXManager : MonoBehaviour
 {
