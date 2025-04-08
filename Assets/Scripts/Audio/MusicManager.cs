@@ -7,16 +7,18 @@ public class MusicManager : MonoBehaviour
 {
     AudioSource source;
     AudioLowPassFilter lowPass;
-    bool isMuted;
+    public bool isMuted { get; private set; }
 
     [Header("Low Pass")]
     [SerializeField] float hiddenFreq;
     [SerializeField] float hiddenResonance;
-    [SerializeField] float hiddenVolume;
+    public float hiddenVolume;
     public enum Mode { Default, Hidden, MainMenu }
-    Mode mode;
-    float lowPassAmount01;
+    public Mode mode { get; private set; }
+    public float lowPassAmount01 { get;private set; }
     float lowPassRef;
+
+    float hiddenVolumeMultiplier = 1;
 
     const float DEFAULT_FREQ = 3000;
     const float DEFAULT_RESONANCE = 1;
@@ -59,7 +61,7 @@ public class MusicManager : MonoBehaviour
         lowPassAmount01 = Mathf.SmoothDamp(lowPassAmount01, target, ref lowPassRef, LOW_PASS_SMOOTH);
         lowPass.cutoffFrequency = Mathf.Lerp(DEFAULT_FREQ, hiddenFreq, lowPassAmount01);
         lowPass.lowpassResonanceQ = Mathf.Lerp(DEFAULT_RESONANCE, hiddenResonance, lowPassAmount01);
-        source.volume = Mathf.Lerp(DEFAULT_VOLUME, hiddenVolume, lowPassAmount01);
+        source.volume = Mathf.Lerp(DEFAULT_VOLUME, hiddenVolume* hiddenVolumeMultiplier, lowPassAmount01);
     }
 
     public void SetMode(Mode mode)
@@ -76,5 +78,10 @@ public class MusicManager : MonoBehaviour
     public void ToggleMute()
     {
         Mute(!isMuted);
+    }
+
+    public void SetHiddenVolumeMult(float value)
+    {
+        hiddenVolumeMultiplier = value;
     }
 }
